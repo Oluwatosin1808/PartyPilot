@@ -72,15 +72,43 @@ export interface Database {
           event_id: string;
           ai_response: EventPlan;
           created_at: string;
+          spotify_playlist_url: string | null;
         };
         Insert: {
           id?: string;
           event_id: string;
           ai_response: EventPlan;
           created_at?: string;
+          spotify_playlist_url?: string | null;
         };
         Update: {
           ai_response?: EventPlan;
+          spotify_playlist_url?: string | null;
+        };
+        Relationships: [];
+      };
+      spotify_tokens: {
+        Row: {
+          user_id: string;
+          access_token: string;
+          refresh_token: string;
+          expires_at: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          access_token: string;
+          refresh_token: string;
+          expires_at: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          access_token?: string;
+          refresh_token?: string;
+          expires_at?: string;
+          updated_at?: string;
         };
         Relationships: [];
       };

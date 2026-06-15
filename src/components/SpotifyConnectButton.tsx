@@ -1,16 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSupabase } from "../supabase-provider";
-import { Button } from "../ui/button";
+import { useSupabase } from "@/components/supabase-provider";
+import { Button } from "@/components/ui/button";
 
 export function SpotifyConnectButton({ userId }: { userId: string }) {
-  const { supabase } = useSupabase();
+  const supabase = useSupabase();
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function checkStatus() {
+      if (!supabase) return;
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
@@ -32,15 +33,15 @@ export function SpotifyConnectButton({ userId }: { userId: string }) {
     }
     
     checkStatus();
-  }, [supabase.auth]);
+  }, [supabase]);
 
   if (isLoading) {
-    return <Button variant="outline" disabled>Loading...</Button>;
+    return <Button variant="secondary" disabled>Loading...</Button>;
   }
 
   if (isConnected) {
     return (
-      <Button variant="outline" className="text-green-500 border-green-500 hover:bg-green-50" disabled>
+      <Button variant="secondary" className="text-green-500 border-green-500 hover:bg-green-50" disabled>
         Connected to Spotify
       </Button>
     );
@@ -48,7 +49,7 @@ export function SpotifyConnectButton({ userId }: { userId: string }) {
 
   return (
     <Button 
-      variant="default"
+      variant="primary"
       className="bg-[#1DB954] hover:bg-[#1ed760] text-white"
       onClick={() => {
         window.location.href = `/api/spotify/login?userId=${userId}`;
