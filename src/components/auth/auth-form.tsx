@@ -86,7 +86,12 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
           <Button className="w-full" disabled={loading}>{loading ? "Working..." : mode === "signup" ? "Sign Up" : "Login"}</Button>
         </form>
 
-        <div className="mt-6">
+        <div className="mt-6 space-y-3">
+          {mode === "login" && (
+            <Link href="/forgot-password" className="block text-center font-bold underline">
+              Forgot your password?
+            </Link>
+          )}
           {mode === "signup" ? (
             <LinkButton href="/login" variant="secondary" className="w-full">I Have An Account</LinkButton>
           ) : (

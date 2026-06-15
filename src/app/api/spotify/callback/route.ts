@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { exchangeSpotifyCode } from '@/lib/spotify';
+import { exchangeCodeForToken } from '@/lib/spotify';
 import { createClient } from '@supabase/supabase-js';
 
 export async function GET(request: Request) {
@@ -12,7 +12,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const tokenData = await exchangeSpotifyCode(code);
+    const tokenData = await exchangeCodeForToken(code);
     
     // We use the service role key to bypass RLS and insert the token safely from the server
     const supabaseAdmin = createClient(
@@ -21,14 +21,14 @@ export async function GET(request: Request) {
     );
 
     const expiresAt = new Date();
-    expiresAt.setSeconds(expiresAt.getSeconds() + tokenData.expires_in);
+    expiresAt.setSeconds(expiresAt.getSeconds() + tokenData.expiresIn);
 
     const { error } = await supabaseAdmin
       .from('spotify_tokens')
       .upsert({
         user_id: userId,
-        access_token: tokenData.access_token,
-        refresh_token: tokenData.refresh_token,
+        access_token: tokenData.accessToken,
+        refresh_token: tokenData.refreshToken,
         expires_at: expiresAt.toISOString(),
         updated_at: new Date().toISOString(),
       });

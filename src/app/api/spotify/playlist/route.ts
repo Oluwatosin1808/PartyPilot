@@ -2,11 +2,8 @@ import { NextResponse } from 'next/server';
 import { createRouteSupabaseClient } from '@/lib/supabase/server';
 import { createClient } from '@supabase/supabase-js';
 import { 
-  refreshSpotifyToken, 
-  searchSpotifyTrack, 
-  getSpotifyUserProfile, 
-  createSpotifyPlaylist, 
-  addTracksToPlaylist 
+  refreshAccessToken, 
+  createPartyPlaylist 
 } from '@/lib/spotify';
 
 export async function POST(request: Request) {
@@ -17,9 +14,9 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { eventId, playlistName, description, songs } = body;
+    const { eventId, eventName, eventType, songs } = body;
 
-    if (!eventId || !playlistName || !songs || !Array.isArray(songs)) {
+    if (!eventId || !eventName || !eventType || !songs || !Array.isArray(songs)) {
       return NextResponse.json({ error: 'Invalid payload.' }, { status: 400 });
     }
 
@@ -29,7 +26,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'User not found.' }, { status: 401 });
     }
 
-    // Use admin client to bypass RLS if necessary, but normal client might work since they own it
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -42,55 +38,39 @@ export async function POST(request: Request) {
       .single();
 
     if (tokenError || !tokenData) {
-      return NextResponse.json({ error: 'Spotify account not connected.' }, { status: 400 });
+      return NextResponse.json({ error: 'Spotify account not connected. Please reconnect your Spotify account.' }, { status: 400 });
     }
 
     let accessToken = tokenData.access_token;
     
-    // Check if token expired
     if (new Date(tokenData.expires_at) <= new Date()) {
       try {
-        const refreshed = await refreshSpotifyToken(tokenData.refresh_token);
-        accessToken = refreshed.access_token;
+        const refreshed = await refreshAccessToken(tokenData.refresh_token);
+        accessToken = refreshed.accessToken;
         const newExpiresAt = new Date();
-        newExpiresAt.setSeconds(newExpiresAt.getSeconds() + refreshed.expires_in);
+        newExpiresAt.setSeconds(newExpiresAt.getSeconds() + refreshed.expiresIn);
 
         await supabaseAdmin
           .from('spotify_tokens')
           .update({
             access_token: accessToken,
-            ...(refreshed.refresh_token ? { refresh_token: refreshed.refresh_token } : {}),
+            ...(refreshed.refreshToken ? { refresh_token: refreshed.refreshToken } : {}),
             expires_at: newExpiresAt.toISOString(),
             updated_at: new Date().toISOString()
           })
           .eq('user_id', user.id);
       } catch (err) {
-        return NextResponse.json({ error: 'Failed to refresh Spotify token. Please reconnect.' }, { status: 401 });
+        return NextResponse.json({ error: 'Failed to refresh Spotify token. Please reconnect your account.' }, { status: 401 });
       }
     }
 
-    // Get Spotify User Profile
-    const profile = await getSpotifyUserProfile(accessToken);
+    const playlistUrl = await createPartyPlaylist(
+      accessToken,
+      eventName,
+      eventType,
+      songs
+    );
 
-    // Create Playlist
-    const playlist = await createSpotifyPlaylist(profile.id, playlistName, description || 'Created by PartyPilot', accessToken);
-
-    // Search and add tracks
-    const trackUris: string[] = [];
-    for (const song of songs) {
-      const track = await searchSpotifyTrack(song, accessToken);
-      if (track) {
-        trackUris.push(track.uri);
-      }
-    }
-
-    if (trackUris.length > 0) {
-      await addTracksToPlaylist(playlist.id, trackUris, accessToken);
-    }
-
-    const playlistUrl = playlist.external_urls.spotify;
-
-    // Save to event_plans
     await supabaseAdmin
       .from('event_plans')
       .update({ spotify_playlist_url: playlistUrl })
@@ -99,6 +79,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ playlistUrl });
 
   } catch (error) {
+    console.error('[Spotify Playlist Error] Full error:', error);
     const message = error instanceof Error ? error.message : 'Could not create playlist.';
     return NextResponse.json({ error: message }, { status: 500 });
   }

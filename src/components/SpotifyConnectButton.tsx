@@ -41,9 +41,19 @@ export function SpotifyConnectButton({ userId }: { userId: string }) {
 
   if (isConnected) {
     return (
-      <Button variant="secondary" className="text-green-500 border-green-500 hover:bg-green-50" disabled>
-        Connected to Spotify
-      </Button>
+      <div className="flex gap-3 flex-wrap">
+        <Button variant="secondary" className="text-green-500 border-green-500 hover:bg-green-50" disabled>
+          Connected to Spotify
+        </Button>
+        <Button 
+          variant="secondary"
+          onClick={() => {
+            window.location.href = `/api/spotify/login?userId=${userId}`;
+          }}
+        >
+          Reconnect Spotify
+        </Button>
+      </div>
     );
   }
 

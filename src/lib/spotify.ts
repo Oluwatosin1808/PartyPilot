@@ -1,144 +1,132 @@
+import SpotifyWebApi from "spotify-web-api-node";
+
 const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
 const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
-const SPOTIFY_REDIRECT_URI = process.env.NEXT_PUBLIC_APP_URL 
-  ? `${process.env.NEXT_PUBLIC_APP_URL}/api/spotify/callback`
-  : 'http://localhost:3000/api/spotify/callback';
+const SPOTIFY_REDIRECT_URI = process.env.SPOTIFY_REDIRECT_URI || "http://localhost:3000/api/spotify/callback";
 
-const SPOTIFY_ACCOUNTS_URL = 'https://accounts.spotify.com';
-const SPOTIFY_API_URL = 'https://api.spotify.com/v1';
-
-export function getSpotifyAuthUrl(userId: string) {
-  const scope = 'playlist-modify-public playlist-modify-private user-read-private user-read-email';
-  const queryParams = new URLSearchParams({
-    response_type: 'code',
-    client_id: SPOTIFY_CLIENT_ID || '',
-    scope: scope,
-    redirect_uri: SPOTIFY_REDIRECT_URI,
-    state: userId,
+function createSpotifyClient(accessToken?: string): SpotifyWebApi {
+  const client = new SpotifyWebApi({
+    clientId: SPOTIFY_CLIENT_ID,
+    clientSecret: SPOTIFY_CLIENT_SECRET,
+    redirectUri: SPOTIFY_REDIRECT_URI,
   });
-
-  return `${SPOTIFY_ACCOUNTS_URL}/authorize?${queryParams.toString()}`;
-}
-
-export async function exchangeSpotifyCode(code: string) {
-  const credentials = Buffer.from(`${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`).toString('base64');
-
-  const response = await fetch(`${SPOTIFY_ACCOUNTS_URL}/api/token`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Basic ${credentials}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({
-      grant_type: 'authorization_code',
-      code: code,
-      redirect_uri: SPOTIFY_REDIRECT_URI,
-    }),
-    cache: 'no-store'
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Failed to exchange token: ${errorText}`);
+  if (accessToken) {
+    client.setAccessToken(accessToken);
   }
-
-  return response.json(); // { access_token, refresh_token, expires_in }
+  return client;
 }
 
-export async function refreshSpotifyToken(refreshToken: string) {
-  const credentials = Buffer.from(`${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`).toString('base64');
+export function getAuthUrl(userId: string): string {
+  const scopes = ["playlist-modify-public", "playlist-modify-private", "user-read-private", "user-read-email"];
+  const client = createSpotifyClient();
+  return client.createAuthorizeURL(scopes, userId);
+}
 
-  const response = await fetch(`${SPOTIFY_ACCOUNTS_URL}/api/token`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Basic ${credentials}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({
-      grant_type: 'refresh_token',
-      refresh_token: refreshToken,
-    }),
-    cache: 'no-store'
+export async function exchangeCodeForToken(code: string): Promise<{
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
+}> {
+  const client = createSpotifyClient();
+  const data = await client.authorizationCodeGrant(code);
+  return {
+    accessToken: data.body.access_token,
+    refreshToken: data.body.refresh_token,
+    expiresIn: data.body.expires_in,
+  };
+}
+
+export async function refreshAccessToken(refreshToken: string): Promise<{
+  accessToken: string;
+  expiresIn: number;
+  refreshToken?: string;
+}> {
+  const client = createSpotifyClient();
+  client.setRefreshToken(refreshToken);
+  const data = await client.refreshAccessToken();
+  return {
+    accessToken: data.body.access_token,
+    expiresIn: data.body.expires_in,
+    refreshToken: data.body.refresh_token || undefined,
+  };
+}
+
+export async function getSpotifyUserProfile(accessToken: string): Promise<SpotifyApi.UserProfileResponse> {
+  const client = createSpotifyClient(accessToken);
+  const data = await client.getMe();
+  return data.body;
+}
+
+export async function createPlaylist(
+  accessToken: string,
+  playlistName: string,
+  description: string = ""
+): Promise<any> {
+  const client = createSpotifyClient(accessToken);
+  const data = await client.createPlaylist(playlistName, {
+    description,
+    public: false,
   });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Failed to refresh token: ${errorText}`);
-  }
-
-  return response.json(); // { access_token, expires_in, refresh_token (optional) }
+  return data.body;
 }
 
-export async function searchSpotifyTrack(query: string, accessToken: string) {
-  const response = await fetch(`${SPOTIFY_API_URL}/search?q=${encodeURIComponent(query)}&type=track&limit=1`, {
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-    },
-  });
-
-  if (!response.ok) return null;
-  const data = await response.json();
-  if (data.tracks && data.tracks.items.length > 0) {
-    return data.tracks.items[0]; // Returns the first track object
-  }
-  return null;
+export async function searchTracks(
+  accessToken: string,
+  query: string,
+  limit: number = 1
+): Promise<SpotifyApi.TrackObjectFull[]> {
+  const client = createSpotifyClient(accessToken);
+  const data = await client.searchTracks(query, { limit });
+  return data.body.tracks?.items || [];
 }
 
-export async function getSpotifyUserProfile(accessToken: string) {
-  const response = await fetch(`${SPOTIFY_API_URL}/me`, {
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-    },
-  });
-  
-  if (!response.ok) {
-    throw new Error('Failed to fetch user profile');
-  }
-  return response.json();
-}
-
-export async function createSpotifyPlaylist(spotifyUserId: string, name: string, description: string, accessToken: string) {
-  const response = await fetch(`${SPOTIFY_API_URL}/users/${spotifyUserId}/playlists`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      name,
-      description,
-      public: false,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Failed to create playlist: ${errorText}`);
-  }
-
-  return response.json(); // Returns playlist object
-}
-
-export async function addTracksToPlaylist(playlistId: string, uris: string[], accessToken: string) {
-  if (uris.length === 0) return;
-  
-  // Spotify allows max 100 uris per request
+export async function addTracksToPlaylist(
+  accessToken: string,
+  playlistId: string,
+  uris: string[]
+): Promise<void> {
+  const client = createSpotifyClient(accessToken);
+  // Spotify allows max 100 tracks per request
   for (let i = 0; i < uris.length; i += 100) {
     const chunk = uris.slice(i, i + 100);
-    const response = await fetch(`${SPOTIFY_API_URL}/playlists/${playlistId}/tracks`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        uris: chunk,
-      }),
-    });
+    await client.addTracksToPlaylist(playlistId, chunk);
+  }
+}
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to add tracks to playlist: ${errorText}`);
+export async function searchTrackUris(
+  accessToken: string,
+  songQueries: string[]
+): Promise<string[]> {
+  const uris: string[] = [];
+  for (const query of songQueries) {
+    const tracks = await searchTracks(accessToken, query);
+    if (tracks.length > 0) {
+      uris.push(tracks[0].uri);
     }
   }
+  return uris;
+}
+
+export async function createPartyPlaylist(
+  accessToken: string,
+  eventName: string,
+  eventType: string,
+  songList: string[]
+): Promise<string> {
+  // Step 1: Create playlist
+  const playlist = await createPlaylist(
+    accessToken,
+    `${eventName} Playlist`,
+    `Music for ${eventName} - a ${eventType} generated by PartyPilot`
+  );
+  
+  // Step 2: Search for tracks
+  const trackUris = await searchTrackUris(accessToken, songList);
+  
+  // Step 3: Add tracks to playlist
+  if (trackUris.length > 0) {
+    await addTracksToPlaylist(accessToken, playlist.id, trackUris);
+  }
+  
+  return playlist.external_urls.spotify;
 }

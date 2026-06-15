@@ -1,8 +1,10 @@
+"use client";
 import Link from "next/link";
-import { ClipboardList, DollarSign, Music, Sparkles, Users } from "lucide-react";
+import { useState } from "react";
+import { ClipboardList, DollarSign, Menu, Music, Sparkles, Users, X } from "lucide-react";
 import { samplePlan } from "@/lib/constants";
 import { BrutalCard, SectionShell } from "@/components/ui/card";
-import { LinkButton } from "@/components/ui/button";
+import { LinkButton, Button } from "@/components/ui/button";
 
 const steps = [
   ["Tell PartyPilot the event shape", "Type, date, guests, budget, music, and vibe."],
@@ -11,19 +13,50 @@ const steps = [
 ];
 
 export function LandingPage() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   return (
     <main className="min-h-screen bg-white text-black">
-      <header className="flex items-center justify-between border-b-4 border-black px-5 py-5 sm:px-8 lg:px-12">
+      <header className="sticky top-0 z-50 flex items-center justify-between border-b-4 border-black bg-white px-5 py-5 sm:px-8 lg:px-12">
         <Link href="/" className="text-2xl font-black">PartyPilot</Link>
+        
+        {/* Desktop Nav */}
         <nav className="hidden items-center gap-6 text-sm font-black uppercase md:flex">
           <a href="#how">How it works</a>
           <a href="#examples">Plan</a>
           <a href="#pricing">Pricing</a>
         </nav>
-        <LinkButton href="/login" variant="secondary" className="min-h-10 px-4 py-2 text-sm shadow-[4px_4px_0_#000]">
-          Login
-        </LinkButton>
+        
+        {/* Desktop Login Button */}
+        <div className="hidden md:flex">
+          <LinkButton href="/login" variant="secondary" className="min-h-10 px-4 py-2 text-sm shadow-[4px_4px_0_#000]">
+            Login
+          </LinkButton>
+        </div>
+        
+        {/* Mobile Menu Button */}
+        <Button 
+          variant="secondary"
+          className="md:hidden min-h-10 w-10 px-3 py-2"
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+        >
+          {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </Button>
       </header>
+      
+      {/* Mobile Nav Menu */}
+      {isMenuOpen && (
+        <div className="md:hidden border-b-4 border-black bg-yellow-300 px-5 py-4">
+          <nav className="flex flex-col gap-4 text-lg font-black uppercase">
+            <a href="#how" onClick={() => setIsMenuOpen(false)}>How it works</a>
+            <a href="#examples" onClick={() => setIsMenuOpen(false)}>Plan</a>
+            <a href="#pricing" onClick={() => setIsMenuOpen(false)}>Pricing</a>
+            <LinkButton href="/login" variant="secondary" className="mt-4 w-full" onClick={() => setIsMenuOpen(false)}>
+              Login
+            </LinkButton>
+          </nav>
+        </div>
+      )}
 
       <section className="grid min-h-[calc(100vh-88px)] items-center gap-10 px-5 py-10 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:px-12">
         <div>

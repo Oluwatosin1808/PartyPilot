@@ -79,9 +79,17 @@ function EventWizardContent({ user }: { user: User }) {
       body: JSON.stringify(parsed.data),
     });
 
-    const planBody = (await planResponse.json()) as { plan?: EventPlan; error?: string };
+    const planBody = (await planResponse.json()) as { plan?: EventPlan; error?: any };
     if (!planResponse.ok || !planBody.plan) {
-      setError(planBody.error ?? "Could not generate the plan.");
+      let errorMessage = "Could not generate the plan.";
+      if (planBody.error) {
+        if (typeof planBody.error === "string") {
+          errorMessage = planBody.error;
+        } else if (planBody.error.message) {
+          errorMessage = planBody.error.message;
+        }
+      }
+      setError(errorMessage);
       setLoading(false);
       return;
     }
@@ -91,11 +99,19 @@ function EventWizardContent({ user }: { user: User }) {
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ event: parsed.data, plan: planBody.plan, userId: user.id }),
     });
-    const saveBody = (await saveResponse.json()) as { eventId?: string; error?: string };
+    const saveBody = (await saveResponse.json()) as { eventId?: string; error?: any };
     setLoading(false);
 
     if (!saveResponse.ok || !saveBody.eventId) {
-      setError(saveBody.error ?? "Could not save the event.");
+      let errorMessage = "Could not save the event.";
+      if (saveBody.error) {
+        if (typeof saveBody.error === "string") {
+          errorMessage = saveBody.error;
+        } else if (saveBody.error.message) {
+          errorMessage = saveBody.error.message;
+        }
+      }
+      setError(errorMessage);
       return;
     }
 
@@ -167,7 +183,7 @@ function EventWizardContent({ user }: { user: User }) {
                 <h2 className="text-4xl font-black">Ready to generate.</h2>
                 <p className="mt-3 text-lg font-bold">PartyPilot will create the plan and save it to your event library.</p>
                 <div className="mt-6 rounded-xl border-4 border-black bg-yellow-300 p-5 font-bold">
-                  {values.name || "Untitled event"} • {values.guest_count} guests • ${values.budget} • {values.vibe_level.replaceAll("_", " ")}
+                  {values.name || "Untitled event"} • {values.guest_count} guests • ₦{values.budget} • {values.vibe_level.replaceAll("_", " ")}
                 </div>
               </div>
             ) : null}

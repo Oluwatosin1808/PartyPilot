@@ -18,7 +18,18 @@ export async function POST(request: Request) {
     const plan = await generateEventPlan(parsed.data);
     return NextResponse.json({ plan });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Could not generate event plan.";
+    console.error("Generate plan error:", error);
+    let message = "Could not generate event plan.";
+    
+    if (error instanceof Error) {
+      // Check if it's a 503 or high demand error
+      if (error.message.includes("high demand") || error.message.includes("UNAVAILABLE") || error.message.includes("503")) {
+        message = "Our AI model is currently busy. Please try again in a few minutes!";
+      } else {
+        message = error.message;
+      }
+    }
+    
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

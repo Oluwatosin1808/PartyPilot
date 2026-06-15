@@ -47,7 +47,7 @@ function DashboardContent({ user }: { user: User }) {
   const statCards: Array<[LucideIcon, string, string | number]> = [
     [CalendarDays, "Events Created", events.length],
     [Users, "Total Guests Planned", stats.totalGuests],
-    [DollarSign, "Average Budget", `$${stats.avgBudget.toLocaleString()}`],
+    [DollarSign, "Average Budget", `₦${stats.avgBudget.toLocaleString()}`],
   ];
 
   return (
@@ -99,12 +99,15 @@ function DashboardContent({ user }: { user: User }) {
             <div className="mt-6 divide-y-4 divide-black border-y-4 border-black">
               {events.length === 0 && !loading ? <p className="py-6 font-bold">Your saved plans will appear here.</p> : null}
               {events.slice(0, 8).map((event) => (
-                <a key={event.id} href={`/events/${event.id}`} className="grid gap-2 py-5 font-bold transition-colors hover:bg-yellow-100 md:grid-cols-4">
+                <div key={event.id} className="grid gap-2 py-5 font-bold transition-colors hover:bg-yellow-100 md:grid-cols-[3fr_1fr_1fr_1fr_1fr] items-center">
                   <span className="text-xl font-black">{event.name}</span>
                   <span>{event.type}</span>
                   <span>{event.location}</span>
                   <span>{new Date(event.event_date).toLocaleDateString()}</span>
-                </a>
+                  <a href={`/events/${event.id}`} className="inline-block rounded-xl border-4 border-black bg-blue-400 px-4 py-2 font-black text-white text-center">
+                    View
+                  </a>
+                </div>
               ))}
             </div>
           </BrutalCard>
