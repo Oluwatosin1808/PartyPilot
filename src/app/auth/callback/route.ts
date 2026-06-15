@@ -1,6 +1,19 @@
 import { NextResponse } from "next/server";
+import { createRouteSupabaseClient } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
-  const url = new URL(request.url);
-  return NextResponse.redirect(new URL("/dashboard", url.origin));
+  const { searchParams, origin } = new URL(request.url);
+  const code = searchParams.get("code");
+  const next = searchParams.get("next") ?? "/dashboard";
+
+  if (code) {
+    const supabase = await createRouteSupabaseClient();
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error) {
+      return NextResponse.redirect(`${origin}${next}`);
+    }
+  }
+
+  // Return the user to an error page if something went wrong
+  return NextResponse.redirect(`${origin}/auth/auth-code-error`);
 }

@@ -8,7 +8,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const supabase = createRouteSupabaseClient(token);
+    const supabase = await createRouteSupabaseClient(token);
     
     // Get current user id
     const { data: { user }, error: userError } = await supabase.auth.getUser();

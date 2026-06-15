@@ -16,7 +16,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid event payload." }, { status: 400 });
     }
 
-    const supabase = createRouteSupabaseClient(token);
+    const supabase = await createRouteSupabaseClient(token);
     const { data: event, error: eventError } = await supabase
       .from("events")
       .insert({ ...parsed.data, user_id: body.userId })
