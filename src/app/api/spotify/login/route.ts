@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getSpotifyAuthUrl } from '@/lib/spotify';
+import { getAuthUrl } from '@/lib/spotify';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -9,6 +9,6 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
   }
 
-  const authUrl = getSpotifyAuthUrl(userId);
+  const authUrl = getAuthUrl(userId);
   return NextResponse.redirect(authUrl);
 }
