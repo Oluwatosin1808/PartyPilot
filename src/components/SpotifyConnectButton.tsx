@@ -8,6 +8,7 @@ export function SpotifyConnectButton({ userId }: { userId: string }) {
   const supabase = useSupabase();
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDisconnecting, setIsDisconnecting] = useState(false);
 
   useEffect(() => {
     async function checkStatus() {
@@ -35,6 +36,29 @@ export function SpotifyConnectButton({ userId }: { userId: string }) {
     checkStatus();
   }, [supabase]);
 
+  const handleDisconnect = async () => {
+    setIsDisconnecting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      
+      const res = await fetch("/api/spotify/disconnect", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${session.access_token}`
+        }
+      });
+      
+      if (res.ok) {
+        setIsConnected(false);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsDisconnecting(false);
+    }
+  };
+
   if (isLoading) {
     return <Button variant="secondary" disabled>Loading...</Button>;
   }
@@ -52,6 +76,13 @@ export function SpotifyConnectButton({ userId }: { userId: string }) {
           }}
         >
           Reconnect Spotify
+        </Button>
+        <Button 
+          variant="black"
+          disabled={isDisconnecting}
+          onClick={handleDisconnect}
+        >
+          {isDisconnecting ? "Disconnecting..." : "Disconnect Spotify"}
         </Button>
       </div>
     );

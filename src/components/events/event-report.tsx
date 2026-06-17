@@ -164,52 +164,57 @@ function Meta({ label, value }: { label: string; value: string }) {
   return <div className="rounded-xl border-4 border-black bg-white p-4"><p className="text-xs font-black uppercase">{label}</p><p className="mt-1 text-xl font-black capitalize">{value}</p></div>;
 }
 
+// Helper function to remove markdown ** from text
+function removeMarkdownBold(text: string): string {
+  return text.replace(/\*\*/g, "");
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function itemToString(item: any): string {
-  if (typeof item === "string") return item;
+  if (typeof item === "string") return removeMarkdownBold(item);
   if (item && typeof item === "object") {
     // Handle structured playlist items from AI (e.g. { name, artists_to_include, genres })
     if (item.name) {
-      const parts = [item.name];
-      if (item.artists_to_include) parts.push(`by ${item.artists_to_include}`);
-      if (item.description) parts.push(`— ${item.description}`);
+      const parts = [removeMarkdownBold(String(item.name))];
+      if (item.artists_to_include) parts.push(`by ${removeMarkdownBold(String(item.artists_to_include))}`);
+      if (item.description) parts.push(`— ${removeMarkdownBold(String(item.description))}`);
       return parts.join(" ");
     }
     // Handle food items like { item, description, vibe_adaptation }
     if (item.item) {
-      const parts = [item.item];
-      if (item.description) parts.push(`— ${item.description}`);
+      const parts = [removeMarkdownBold(String(item.item))];
+      if (item.description) parts.push(`— ${removeMarkdownBold(String(item.description))}`);
       return parts.join(" ");
     }
     // Handle budget breakdown items (e.g. { category, amount })
     if (item.category) {
-      const parts = [item.category];
-      if (item.amount) parts.push(String(item.amount));
-      if (item.description) parts.push(`— ${item.description}`);
+      const parts = [removeMarkdownBold(String(item.category))];
+      if (item.amount) parts.push(removeMarkdownBold(String(item.amount)));
+      if (item.description) parts.push(`— ${removeMarkdownBold(String(item.description))}`);
       return parts.join(": ");
     }
     // Handle timeline items (e.g. { time, activity })
     if (item.time || item.activity) {
       const parts: string[] = [];
-      if (item.time) parts.push(String(item.time));
-      if (item.activity) parts.push(String(item.activity));
-      if (item.description) parts.push(`— ${item.description}`);
+      if (item.time) parts.push(removeMarkdownBold(String(item.time)));
+      if (item.activity) parts.push(removeMarkdownBold(String(item.activity)));
+      if (item.description) parts.push(`— ${removeMarkdownBold(String(item.description))}`);
       return parts.join(" — ");
     }
     // Handle any other object with common fields we might want to display
     const parts: string[] = [];
     for (const key of ["title", "name", "item", "category", "amount", "time", "activity", "description", "tip"]) {
       if (item[key]) {
-        parts.push(String(item[key]));
+        parts.push(removeMarkdownBold(String(item[key])));
       }
     }
     if (parts.length > 0) {
       return parts.join(" — ");
     }
     // Fallback to stringify if nothing else matches
-    return JSON.stringify(item);
+    return removeMarkdownBold(JSON.stringify(item));
   }
-  return String(item);
+  return removeMarkdownBold(String(item));
 }
 
 function PlanSection({ title, items, children }: { title: string; items: unknown[]; children?: React.ReactNode }) {
