@@ -37,6 +37,7 @@ export function SpotifyConnectButton({ userId }: { userId: string }) {
   }, [supabase]);
 
   const handleDisconnect = async () => {
+    if (!supabase) return;
     setIsDisconnecting(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
