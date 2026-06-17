@@ -79,26 +79,26 @@ export function LandingPage() {
           </div>
         </div>
 
-        <BrutalCard className="rotate-1 bg-yellow-300 p-4 sm:p-5">
-          <div className="rounded-xl border-4 border-black bg-white p-4 sm:p-5">
-            <div className="flex items-center justify-between border-b-4 border-black pb-3 sm:pb-4">
+        <BrutalCard className="w-full max-w-full rotate-0 sm:rotate-1 bg-yellow-300 p-3 sm:p-5">
+          <div className="rounded-xl border-4 border-black bg-white p-3 sm:p-5">
+            <div className="flex items-center justify-between border-b-4 border-black pb-2 sm:pb-4">
               <div>
-                <p className="text-xs sm:text-sm font-black uppercase">Generated Plan</p>
-                <h2 className="text-xl sm:text-3xl font-black">Rooftop Birthday</h2>
+                <p className="text-[10px] sm:text-sm font-black uppercase">Generated Plan</p>
+                <h2 className="text-lg sm:text-3xl font-black">Rooftop Birthday</h2>
               </div>
-              <Sparkles className="h-8 w-8 sm:h-10 sm:w-10" aria-hidden />
+              <Sparkles className="h-6 w-6 sm:h-10 sm:w-10" aria-hidden />
             </div>
-            <div className="grid gap-3 pt-4 sm:pt-5 sm:grid-cols-2">
+            <div className="grid gap-2 pt-3 sm:pt-5 sm:grid-cols-2">
               {[
                 [Music, "Playlist", "4 energy arcs"],
                 [ClipboardList, "Timeline", "Minute-by-minute"],
                 [DollarSign, "Budget", "5 allocations"],
                 [Users, "Guests", "48-person flow"],
               ].map(([Icon, title, text]) => (
-                <div key={String(title)} className="rounded-xl border-4 border-black bg-white p-3 sm:p-4 shadow-[4px_4px_0_#000]">
-                  <Icon className="mb-2 h-6 w-6 sm:h-7 sm:w-7" aria-hidden />
-                  <p className="text-base sm:text-lg font-black">{String(title)}</p>
-                  <p className="text-sm sm:font-bold">{String(text)}</p>
+                <div key={String(title)} className="rounded-xl border-4 border-black bg-white p-2 sm:p-4 shadow-[4px_4px_0_#000]">
+                  <Icon className="mb-1 h-5 w-5 sm:h-7 sm:w-7" aria-hidden />
+                  <p className="text-sm sm:text-lg font-black">{String(title)}</p>
+                  <p className="text-[11px] sm:font-bold">{String(text)}</p>
                 </div>
               ))}
             </div>
