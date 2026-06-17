@@ -7,6 +7,7 @@ import { Button, LinkButton } from "@/components/ui/button";
 import { BrutalCard } from "@/components/ui/card";
 import { Input, Label } from "@/components/ui/field";
 import { useSupabase } from "@/components/supabase-provider";
+import { Logo } from "@/components/ui/logo";
 
 export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const router = useRouter();
@@ -61,7 +62,10 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   return (
     <main className="grid min-h-screen place-items-center bg-yellow-300 px-5 py-12">
       <BrutalCard className="w-full max-w-lg bg-white">
-        <Link href="/" className="text-2xl font-black">PartyPilot</Link>
+        <Link href="/" className="flex items-center gap-3">
+          <Logo className="h-14 w-14" />
+          <span className="text-2xl font-black">PartyPilot</span>
+        </Link>
         <h1 className="mt-8 text-5xl font-black leading-none">{mode === "signup" ? "Create your pilot seat." : "Welcome back."}</h1>
         <p className="mt-4 text-lg font-bold">
           {mode === "signup" ? "Save AI-generated plans and revisit them later." : "Open your saved event plans."}

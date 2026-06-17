@@ -5,6 +5,7 @@ import { ClipboardList, DollarSign, Menu, Music, Sparkles, Users, X } from "luci
 import { samplePlan } from "@/lib/constants";
 import { BrutalCard, SectionShell } from "@/components/ui/card";
 import { LinkButton, Button } from "@/components/ui/button";
+import { Logo } from "@/components/ui/logo";
 
 const steps = [
   ["Tell PartyPilot the event shape", "Type, date, guests, budget, music, and vibe."],
@@ -18,7 +19,10 @@ export function LandingPage() {
   return (
     <main className="min-h-screen bg-white text-black">
       <header className="sticky top-0 z-50 flex items-center justify-between border-b-4 border-black bg-white px-5 py-5 sm:px-8 lg:px-12">
-        <Link href="/" className="text-2xl font-black">PartyPilot</Link>
+        <Link href="/" className="flex items-center gap-3">
+          <Logo className="h-12 w-12 sm:h-16 sm:w-16" />
+          <span className="text-2xl font-black">PartyPilot</span>
+        </Link>
         
         {/* Desktop Nav */}
         <nav className="hidden items-center gap-6 text-sm font-black uppercase md:flex">

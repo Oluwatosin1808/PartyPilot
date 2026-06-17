@@ -7,6 +7,7 @@ import { Button, LinkButton } from "@/components/ui/button";
 import { BrutalCard } from "@/components/ui/card";
 import { Input, Label } from "@/components/ui/field";
 import { useSupabase } from "@/components/supabase-provider";
+import { Logo } from "@/components/ui/logo";
 
 export function ForgotPasswordForm() {
   const router = useRouter();
@@ -44,7 +45,10 @@ export function ForgotPasswordForm() {
   return (
     <main className="grid min-h-screen place-items-center bg-yellow-300 px-5 py-12">
       <BrutalCard className="w-full max-w-lg bg-white">
-        <Link href="/" className="text-2xl font-black">PartyPilot</Link>
+        <Link href="/" className="flex items-center gap-3">
+          <Logo className="h-14 w-14" />
+          <span className="text-2xl font-black">PartyPilot</span>
+        </Link>
         <h1 className="mt-8 text-5xl font-black leading-none">Reset your password.</h1>
         <p className="mt-4 text-lg font-bold">
           Enter your email and we&apos;ll send you a link to reset your password.

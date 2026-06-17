@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button, LinkButton } from "@/components/ui/button";
 import { useSupabase } from "@/components/supabase-provider";
+import { Logo } from "@/components/ui/logo";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -21,7 +22,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <main className="min-h-screen bg-white text-black">
       <header className="sticky top-0 z-50 flex items-center justify-between border-b-4 border-black bg-yellow-300 px-5 py-4 sm:px-8">
-        <Link href="/dashboard" className="text-2xl font-black">PartyPilot</Link>
+        <Link href="/dashboard" className="flex items-center gap-3">
+          <Logo className="h-10 w-10 sm:h-14 sm:w-14" />
+          <span className="text-2xl font-black">PartyPilot</span>
+        </Link>
         
         {/* Desktop Nav */}
         <nav className="hidden flex-wrap items-center gap-3 md:flex">
