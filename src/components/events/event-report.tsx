@@ -97,45 +97,53 @@ function ReportContent() {
                       Open in Spotify
                     </a>
                   ) : (
-                    <Button 
-                      className="mt-4 bg-[#1DB954] hover:bg-[#1ed760] text-white"
-                      disabled={creatingPlaylist}
-                      onClick={async () => {
-                        setCreatingPlaylist(true);
-                        try {
-                          const { data: { session } } = await supabase!.auth.getSession();
-                          const res = await fetch("/api/spotify/playlist", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${session?.access_token}`
-          },
-          body: JSON.stringify({
-            eventId: event.id,
-            eventName: event.name,
-            eventType: event.type,
-            songs: plan.playlist.map((s: unknown) => {
-              if (typeof s === "string") return s;
-              if (s && typeof s === "object" && "name" in s) {
-                const obj = s as Record<string, unknown>;
-                return obj.artists_to_include ? `${obj.name} ${obj.artists_to_include}` : String(obj.name);
-              }
-              return String(s);
-            })
-          })
-        });
-                          const data = await res.json();
-                          if (data.playlistUrl) setPlaylistUrl(data.playlistUrl);
-                          else alert(data.error || "Failed to create playlist");
-                        } catch (err) {
-                          alert("Failed to create playlist");
-                        } finally {
-                          setCreatingPlaylist(false);
-                        }
-                      }}
-                    >
-                      {creatingPlaylist ? "Creating..." : "Create Spotify Playlist"}
-                    </Button>
+                    <div className="space-y-3">
+                      <Button 
+                        className="mt-4 bg-[#1DB954] hover:bg-[#1ed760] text-white"
+                        disabled={creatingPlaylist}
+                        onClick={async () => {
+                          setCreatingPlaylist(true);
+                          try {
+                            const { data: { session } } = await supabase!.auth.getSession();
+                            const res = await fetch("/api/spotify/playlist", {
+                              method: "POST",
+                              headers: {
+                                "Content-Type": "application/json",
+                                "Authorization": `Bearer ${session?.access_token}`
+                              },
+                              body: JSON.stringify({
+                                eventId: event.id,
+                                eventName: event.name,
+                                eventType: event.type,
+                                songs: plan.playlist.map((s: unknown) => {
+                                  if (typeof s === "string") return s;
+                                  if (s && typeof s === "object" && "name" in s) {
+                                    const obj = s as Record<string, unknown>;
+                                    return obj.artists_to_include ? `${obj.name} ${obj.artists_to_include}` : String(obj.name);
+                                  }
+                                  return String(s);
+                                })
+                              })
+                            });
+                            const data = await res.json();
+                            if (data.playlistUrl) setPlaylistUrl(data.playlistUrl);
+                            else {
+                              let errorMsg = data.error || "Failed to create playlist";
+                              if (errorMsg.includes("Missing Spotify scopes")) {
+                                errorMsg = "Missing permissions! Click 'Reconnect Spotify' in your dashboard and accept all permissions when prompted!";
+                              }
+                              alert(errorMsg);
+                            }
+                          } catch (err) {
+                            alert("Failed to create playlist");
+                          } finally {
+                            setCreatingPlaylist(false);
+                          }
+                        }}
+                      >
+                        {creatingPlaylist ? "Creating..." : "Create Spotify Playlist"}
+                      </Button>
+                    </div>
                   )}
                 </PlanSection>
                 <PlanSection title="Food" items={plan.food_recommendations} />
