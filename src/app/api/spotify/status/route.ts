@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createRouteSupabaseClient } from '@/lib/supabase/server';
+import { getUserFromToken, createSupabaseAdminClient } from '@/lib/supabase/server';
 
 export async function GET(request: Request) {
   const token = request.headers.get('authorization')?.replace('Bearer ', '');
@@ -8,15 +8,10 @@ export async function GET(request: Request) {
   }
 
   try {
-    const supabase = await createRouteSupabaseClient(token);
+    const user = await getUserFromToken(token);
+    const supabaseAdmin = createSupabaseAdminClient();
     
-    // Get current user id
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      return NextResponse.json({ error: 'User not found.' }, { status: 401 });
-    }
-
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('spotify_tokens')
       .select('user_id')
       .eq('user_id', user.id)
@@ -28,6 +23,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ connected: true });
   } catch (err) {
+    console.error('[Spotify Status] Error:', err);
     return NextResponse.json({ connected: false });
   }
 }

@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createRouteSupabaseClient } from '@/lib/supabase/server';
-import { createClient } from '@supabase/supabase-js';
+import { getUserFromToken, createSupabaseAdminClient } from '@/lib/supabase/server';
 import { 
   refreshAccessToken, 
   createPartyPlaylist,
@@ -26,18 +25,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid payload.' }, { status: 400 });
     }
 
-    const supabase = await createRouteSupabaseClient(token);
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      console.error('[Spotify Playlist] User not found:', userError);
-      return NextResponse.json({ error: 'User not found.' }, { status: 401 });
-    }
+    const user = await getUserFromToken(token);
     console.log('[Spotify Playlist] User ID:', user.id);
 
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    const supabaseAdmin = createSupabaseAdminClient();
 
     const { data: tokenData, error: tokenError } = await supabaseAdmin
       .from('spotify_tokens')
@@ -104,14 +95,7 @@ export async function POST(request: Request) {
     // Extract more details from Spotify error
     let message = 'Could not create playlist.';
     if (error instanceof Error) {
-      // Check if it's a SpotifyWebApi error
-      if ('body' in error && typeof error.body === 'object') {
-        const spotifyError = error.body as any;
-        console.error('[Spotify Playlist] Spotify error body:', spotifyError);
-        message = spotifyError?.error?.message || message;
-      } else {
-        message = error.message;
-      }
+      message = error.message;
     }
     
     return NextResponse.json({ error: message }, { status: 500 });

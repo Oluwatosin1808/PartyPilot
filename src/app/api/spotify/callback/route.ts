@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { exchangeCodeForToken } from '@/lib/spotify';
-import { createClient } from '@supabase/supabase-js';
+import { createSupabaseAdminClient } from '@/lib/supabase/server';
 
 export async function GET(request: Request) {
   console.log('[Spotify Callback] Request received');
@@ -11,12 +11,12 @@ export async function GET(request: Request) {
 
   if (error) {
     console.error('[Spotify Callback] Error from Spotify:', error);
-    return NextResponse.json({ error: `Spotify error: ${error}` }, { status: 400 });
+    return NextResponse.redirect(new URL('/dashboard?error=spotify_auth', request.url));
   }
 
   if (!code || !userId) {
     console.error('[Spotify Callback] Missing code or userId:', { code: !!code, userId: !!userId });
-    return NextResponse.json({ error: 'Missing code or state (userId)' }, { status: 400 });
+    return NextResponse.redirect(new URL('/dashboard?error=missing_params', request.url));
   }
 
   console.log('[Spotify Callback] Exchanging code for token');
@@ -24,11 +24,8 @@ export async function GET(request: Request) {
     const tokenData = await exchangeCodeForToken(code);
     console.log('[Spotify Callback] Token exchange successful');
     
-    // We use the service role key to bypass RLS and insert the token safely from the server
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    // Use admin client to bypass RLS
+    const supabaseAdmin = createSupabaseAdminClient();
 
     const expiresAt = new Date();
     expiresAt.setSeconds(expiresAt.getSeconds() + tokenData.expiresIn);
@@ -46,14 +43,13 @@ export async function GET(request: Request) {
 
     if (supabaseError) {
       console.error('[Spotify Callback] Error saving spotify token:', supabaseError);
-      return NextResponse.json({ error: 'Failed to save token' }, { status: 500 });
+      return NextResponse.redirect(new URL('/dashboard?error=save_token', request.url));
     }
 
     console.log('[Spotify Callback] Token saved successfully, redirecting to dashboard');
     return NextResponse.redirect(new URL('/dashboard', request.url));
   } catch (err) {
     console.error('[Spotify Callback] Full error:', err);
-    const errorMessage = err instanceof Error ? err.message : 'Failed to authenticate with Spotify';
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    return NextResponse.redirect(new URL('/dashboard?error=spotify_auth', request.url));
   }
 }

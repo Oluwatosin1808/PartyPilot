@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createRouteSupabaseClient } from "@/lib/supabase/server";
+import { getUserFromToken, createSupabaseAdminClient } from "@/lib/supabase/server";
 import { eventSchema } from "@/lib/validations";
 import type { EventPlan } from "@/lib/database.types";
 
@@ -16,10 +16,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid event payload." }, { status: 400 });
     }
 
-    const supabase = await createRouteSupabaseClient(token);
-    const { data: event, error: eventError } = await supabase
+    const user = await getUserFromToken(token);
+    const supabaseAdmin = createSupabaseAdminClient();
+
+    const { data: event, error: eventError } = await supabaseAdmin
       .from("events")
-      .insert({ ...parsed.data, user_id: body.userId })
+      .insert({ ...parsed.data, user_id: user.id })
       .select("id")
       .single();
 
@@ -27,7 +29,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: eventError?.message ?? "Could not save event." }, { status: 500 });
     }
 
-    const { error: planError } = await supabase.from("event_plans").insert({
+    const { error: planError } = await supabaseAdmin.from("event_plans").insert({
       event_id: event.id,
       ai_response: body.plan,
     });
