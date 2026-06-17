@@ -100,34 +100,74 @@ export async function getSpotifyUserProfile(accessToken: string): Promise<any> {
   return await response.json();
 }
 
+// Helper function to get current token's scopes
+async function getCurrentScopes(accessToken: string): Promise<string[]> {
+  console.log("[Spotify] Verifying token scopes");
+  const response = await fetch("https://api.spotify.com/v1/me", {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  // Get scopes from response headers if possible
+  const scopeHeader = response.headers.get("X-Spotify-Scope");
+  if (scopeHeader) {
+    const scopes = scopeHeader.split(" ");
+    console.log("[Spotify] Current token scopes:", scopes);
+    return scopes;
+  }
+
+  // Fallback: if header isn't available, just proceed (we'll check on error)
+  console.log("[Spotify] Could not get scopes from header, proceeding anyway");
+  return [];
+}
+
 export async function createPlaylist(
   accessToken: string,
   playlistName: string,
   description: string = ""
 ): Promise<any> {
-  console.log("[Spotify] Creating playlist");
+  console.log("[Spotify] Creating playlist...");
+  
+  // First get the current user
   const user = await getSpotifyUserProfile(accessToken);
-  const response = await fetch(`https://api.spotify.com/v1/users/${user.id}/playlists`, {
+  console.log("[Spotify] Got user ID for playlist creation:", user.id);
+  
+  // Now create the playlist
+  const url = `https://api.spotify.com/v1/users/${user.id}/playlists`;
+  const requestBody = {
+    name: playlistName,
+    description,
+    public: false,
+  };
+  
+  console.log("[Spotify] Playlist creation request:", {
+    url,
+    method: "POST",
+    body: requestBody
+  });
+  
+  const response = await fetch(url, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      name: playlistName,
-      description,
-      public: false,
-    }),
+    body: JSON.stringify(requestBody),
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error("[Spotify] Create playlist failed:", response.status, errorText);
-    throw new Error(`Failed to create playlist: ${response.status} ${errorText}`);
+    try {
+      const errorJson = await response.json();
+      console.error("[Spotify] Create playlist failed:", response.status, JSON.stringify(errorJson));
+      throw new Error(`Failed to create playlist: ${response.status} ${JSON.stringify(errorJson)}`);
+    } catch {
+      const errorText = await response.text();
+      console.error("[Spotify] Create playlist failed (text):", response.status, errorText);
+      throw new Error(`Failed to create playlist: ${response.status} ${errorText}`);
+    }
   }
 
   const data = await response.json();
-  console.log("[Spotify] Playlist created:", data.id);
+  console.log("[Spotify] Playlist created successfully:", data.id);
   return data;
 }
 
@@ -198,6 +238,18 @@ export async function createPartyPlaylist(
   eventType: string,
   songList: string[]
 ): Promise<string> {
+  console.log("[Spotify] Starting createPartyPlaylist...");
+  
+  // Verify scopes first
+  const currentScopes = await getCurrentScopes(accessToken);
+  const requiredScopes = ["playlist-modify-public", "playlist-modify-private"];
+  const missingScopes = requiredScopes.filter(scope => !currentScopes.includes(scope));
+  
+  if (missingScopes.length > 0) {
+    console.error("[Spotify] Missing required scopes:", missingScopes);
+    throw new Error(`Missing Spotify scopes: ${missingScopes.join(", ")}. Please reconnect your Spotify account!`);
+  }
+  
   // Step 1: Create playlist
   const playlist = await createPlaylist(
     accessToken,
