@@ -14,6 +14,7 @@ export function getAuthUrl(userId: string): string {
     scope: scopes.join(" "),
     redirect_uri: SPOTIFY_REDIRECT_URI,
     state: userId,
+    show_dialog: "true", // Force user to re-approve permissions
   });
   return `https://accounts.spotify.com/authorize?${params.toString()}`;
 }
@@ -94,30 +95,13 @@ export async function getSpotifyUserProfile(accessToken: string): Promise<any> {
   if (!response.ok) {
     const errorText = await response.text();
     console.error("[Spotify] Get profile failed:", response.status, errorText);
+    if (response.status === 403) {
+      throw new Error("Missing permissions! Click 'Reconnect Spotify' in your dashboard and accept all permissions when prompted!");
+    }
     throw new Error(`Failed to get profile: ${response.status} ${errorText}`);
   }
 
   return await response.json();
-}
-
-// Helper function to get current token's scopes
-async function getCurrentScopes(accessToken: string): Promise<string[]> {
-  console.log("[Spotify] Verifying token scopes");
-  const response = await fetch("https://api.spotify.com/v1/me", {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-
-  // Get scopes from response headers if possible
-  const scopeHeader = response.headers.get("X-Spotify-Scope");
-  if (scopeHeader) {
-    const scopes = scopeHeader.split(" ");
-    console.log("[Spotify] Current token scopes:", scopes);
-    return scopes;
-  }
-
-  // Fallback: if header isn't available, just proceed (we'll check on error)
-  console.log("[Spotify] Could not get scopes from header, proceeding anyway");
-  return [];
 }
 
 export async function createPlaylist(
@@ -158,8 +142,14 @@ export async function createPlaylist(
     try {
       const errorJson = await response.json();
       console.error("[Spotify] Create playlist failed:", response.status, JSON.stringify(errorJson));
+      if (response.status === 403) {
+        throw new Error("Missing permissions! Click 'Reconnect Spotify' in your dashboard and accept all permissions when prompted!");
+      }
       throw new Error(`Failed to create playlist: ${response.status} ${JSON.stringify(errorJson)}`);
-    } catch {
+    } catch (err) {
+      if (err instanceof Error && err.message.includes("Missing permissions")) {
+        throw err;
+      }
       const errorText = await response.text();
       console.error("[Spotify] Create playlist failed (text):", response.status, errorText);
       throw new Error(`Failed to create playlist: ${response.status} ${errorText}`);
@@ -213,6 +203,9 @@ export async function addTracksToPlaylist(
     if (!response.ok) {
       const errorText = await response.text();
       console.error("[Spotify] Add tracks failed:", response.status, errorText);
+      if (response.status === 403) {
+        throw new Error("Missing permissions! Click 'Reconnect Spotify' in your dashboard and accept all permissions when prompted!");
+      }
       throw new Error(`Failed to add tracks: ${response.status} ${errorText}`);
     }
   }
@@ -239,16 +232,6 @@ export async function createPartyPlaylist(
   songList: string[]
 ): Promise<string> {
   console.log("[Spotify] Starting createPartyPlaylist...");
-  
-  // Verify scopes first
-  const currentScopes = await getCurrentScopes(accessToken);
-  const requiredScopes = ["playlist-modify-public", "playlist-modify-private"];
-  const missingScopes = requiredScopes.filter(scope => !currentScopes.includes(scope));
-  
-  if (missingScopes.length > 0) {
-    console.error("[Spotify] Missing required scopes:", missingScopes);
-    throw new Error(`Missing Spotify scopes: ${missingScopes.join(", ")}. Please reconnect your Spotify account!`);
-  }
   
   // Step 1: Create playlist
   const playlist = await createPlaylist(
